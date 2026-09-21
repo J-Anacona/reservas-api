@@ -16,8 +16,9 @@ namespace ReservasApi.Data
         {
             base.OnModelCreating(modelBuilder);
 
-      
-            modelBuilder.Entity<Cita>();
+            modelBuilder.Entity<Cita>()
+                .Property(c => c.Fecha)
+                .HasColumnType("timestamptz");
         }
     }
 }

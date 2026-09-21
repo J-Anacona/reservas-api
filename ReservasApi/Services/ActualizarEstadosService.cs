@@ -23,7 +23,7 @@ namespace ReservasApi.Services
 
                 var citas = await context.Citas
                     .Where(c => c.Estado == "Pendiente"
-                             && c.Fecha < DateTime.Now)
+                             && c.Fecha < DateTime.UtcNow)
                     .ToListAsync();
 
                 foreach (var cita in citas)
