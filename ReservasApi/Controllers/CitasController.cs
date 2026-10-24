@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservasApi.Data;
 using ReservasApi.Models;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CitasController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -13,16 +16,26 @@ public class CitasController : ControllerBase
     {
         _context = context;
     }
+
+    private string UsuarioActualId =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var citas = await _context.Citas
+        var query = _context.Citas.Include(c => c.Usuario).AsQueryable();
+
+        if (!User.IsInRole("Barbero"))
+            query = query.Where(c => c.UsuarioId == UsuarioActualId);
+
+        var citas = await query
+            .OrderBy(c => c.Fecha)
             .Select(c => new
             {
                 c.Id,
-                c.Nombre,
-                c.Apellido,
-                c.Documento,
+                Nombre = c.Usuario!.Nombre,
+                Apellido = c.Usuario.Apellido,
+                Documento = c.Usuario.Documento,
                 c.Estado,
                 Fecha = c.Fecha.ToString("dd/MM/yyyy HH:mm")
             })
@@ -32,49 +45,44 @@ public class CitasController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post(Cita cita)
+    public async Task<IActionResult> Post(CitaCrearDto dto)
     {
-        if (string.IsNullOrWhiteSpace(cita.Nombre))
-            return BadRequest("Nombre requerido");
-
-        if (string.IsNullOrWhiteSpace(cita.Apellido))
-            return BadRequest("Apellido requerido");
-
-        if (string.IsNullOrWhiteSpace(cita.Documento))
-            return BadRequest("Documento requerido");
-
-        if (!cita.Documento.All(char.IsDigit))
-            return BadRequest("El documento solo debe contener números");
-
-        if (cita.Fecha < DateTime.Now)
+        if (dto.Fecha < DateTime.Now)
             return BadRequest("No puedes agendar citas en el pasado");
 
         if (await _context.Citas.AnyAsync(c =>
-            c.Fecha.Year == cita.Fecha.Year &&
-            c.Fecha.Month == cita.Fecha.Month &&
-            c.Fecha.Day == cita.Fecha.Day &&
-            c.Fecha.Hour == cita.Fecha.Hour &&
-            c.Fecha.Minute == cita.Fecha.Minute))
+            c.Fecha.Year == dto.Fecha.Year &&
+            c.Fecha.Month == dto.Fecha.Month &&
+            c.Fecha.Day == dto.Fecha.Day &&
+            c.Fecha.Hour == dto.Fecha.Hour &&
+            c.Fecha.Minute == dto.Fecha.Minute))
         {
             return BadRequest("Horario ocupado");
         }
 
-        cita.Estado = "Pendiente";
+        var cita = new Cita
+        {
+            Fecha = dto.Fecha,
+            Estado = "Pendiente",
+            UsuarioId = UsuarioActualId
+        };
 
         _context.Citas.Add(cita);
         await _context.SaveChangesAsync();
 
-        return Ok(cita);
+        return Ok(new { cita.Id, cita.Fecha, cita.Estado });
     }
 
-    [HttpDelete("{documento}")]
-    public async Task<IActionResult> Delete(string documento)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
     {
-        var cita = await _context.Citas
-            .FirstOrDefaultAsync(c => c.Documento == documento);
+        var cita = await _context.Citas.FirstOrDefaultAsync(c => c.Id == id);
 
         if (cita == null)
             return NotFound("Cita no encontrada");
+
+        if (!User.IsInRole("Barbero") && cita.UsuarioId != UsuarioActualId)
+            return Forbid();
 
         _context.Citas.Remove(cita);
         await _context.SaveChangesAsync();
@@ -83,20 +91,31 @@ public class CitasController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, Cita cita)
+    public async Task<IActionResult> Put(int id, CitaActualizarDto dto)
     {
-        if (id != cita.Id)
-            return BadRequest("ID no coincide");
+        var cita = await _context.Citas.FirstOrDefaultAsync(c => c.Id == id);
+
+        if (cita == null)
+            return NotFound("Cita no encontrada");
+
+        bool esBarbero = User.IsInRole("Barbero");
+
+        if (!esBarbero && cita.UsuarioId != UsuarioActualId)
+            return Forbid();
 
         bool existeHora = await _context.Citas
-            .AnyAsync(c => c.Fecha == cita.Fecha && c.Id != id);
+            .AnyAsync(c => c.Fecha == dto.Fecha && c.Id != id);
 
         if (existeHora)
             return BadRequest("Horario ocupado");
 
-        _context.Entry(cita).State = EntityState.Modified;
+        cita.Fecha = dto.Fecha;
+
+        if (esBarbero && !string.IsNullOrWhiteSpace(dto.Estado))
+            cita.Estado = dto.Estado;
+
         await _context.SaveChangesAsync();
 
-        return Ok(cita);
+        return Ok(new { cita.Id, cita.Fecha, cita.Estado });
     }
 }
