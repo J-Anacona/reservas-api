@@ -47,7 +47,7 @@ public class CitasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post(CitaCrearDto dto)
     {
-        if (dto.Fecha < DateTime.Now)
+        if (dto.Fecha < DateTime.UtcNow)
             return BadRequest("No puedes agendar citas en el pasado");
 
         if (await _context.Citas.AnyAsync(c =>
