@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ReservasApi.Models;
 
 namespace ReservasApi.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<Usuario>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
@@ -19,6 +20,12 @@ namespace ReservasApi.Data
             modelBuilder.Entity<Cita>()
                 .Property(c => c.Fecha)
                 .HasColumnType("timestamptz");
+
+            modelBuilder.Entity<Cita>()
+                .HasOne(c => c.Usuario)
+                .WithMany(u => u.Citas)
+                .HasForeignKey(c => c.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
