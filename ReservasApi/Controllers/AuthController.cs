@@ -25,7 +25,6 @@ public class AuthController : ControllerBase
         _roleManager = roleManager;
         _config = config;
     }
-
     [HttpPost("registro")]
     public async Task<IActionResult> Registro(RegistroDto dto)
     {
@@ -35,11 +34,15 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Apellido))
             return BadRequest("Apellido requerido");
 
-        if (string.IsNullOrWhiteSpace(dto.Documento) || !dto.Documento.All(char.IsDigit))
-            return BadRequest("El documento solo debe contener números");
+        if (string.IsNullOrWhiteSpace(dto.Telefono) ||
+            !dto.Telefono.All(char.IsDigit))
+            return BadRequest("El teléfono solo debe contener números");
 
-        if (await _userManager.Users.AnyAsync(u => u.Documento == dto.Documento))
-            return BadRequest("Ya existe un usuario con ese documento");
+        if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == dto.Telefono))
+            return BadRequest("Ya existe un usuario con ese teléfono");
+
+        if (await _userManager.FindByEmailAsync(dto.Email) != null)
+            return BadRequest("Ya existe un usuario con ese correo electrónico");
 
         var usuario = new Usuario
         {
@@ -47,7 +50,7 @@ public class AuthController : ControllerBase
             Email = dto.Email,
             Nombre = dto.Nombre,
             Apellido = dto.Apellido,
-            Documento = dto.Documento
+            PhoneNumber = dto.Telefono
         };
 
         var resultado = await _userManager.CreateAsync(usuario, dto.Password);
@@ -68,8 +71,11 @@ public class AuthController : ControllerBase
     {
         var usuario = await _userManager.FindByEmailAsync(dto.Email);
 
-        if (usuario == null || !await _userManager.CheckPasswordAsync(usuario, dto.Password))
-            return Unauthorized("Correo o contraseña incorrectos");
+        if (usuario == null)
+            return NotFound("Este correo no está registrado. Crea una cuenta para continuar.");
+
+        if (!await _userManager.CheckPasswordAsync(usuario, dto.Password))
+            return Unauthorized("Revisa que tu correo y contraseña estén escritos correctamente.");
 
         var roles = await _userManager.GetRolesAsync(usuario);
 

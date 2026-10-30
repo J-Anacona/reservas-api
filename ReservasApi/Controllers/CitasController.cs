@@ -35,9 +35,10 @@ public class CitasController : ControllerBase
                 c.Id,
                 Nombre = c.Usuario!.Nombre,
                 Apellido = c.Usuario.Apellido,
-                Documento = c.Usuario.Documento,
+                Telefono = c.Usuario!.PhoneNumber,
                 c.Estado,
-                Fecha = c.Fecha.ToString("dd/MM/yyyy HH:mm")
+                Fecha = c.Fecha.AddHours(-5).ToString("dd/MM/yyyy"),
+                Hora = c.Fecha.AddHours(-5).ToString("HH:mm")
             })
             .ToListAsync();
 

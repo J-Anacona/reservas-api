@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ReservasApi.Migrations
 {
     /// <inheritdoc />
-    public partial class InicialConIdentity : Migration
+    public partial class Inicial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,7 +33,6 @@ namespace ReservasApi.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     Nombre = table.Column<string>(type: "text", nullable: false),
                     Apellido = table.Column<string>(type: "text", nullable: false),
-                    Documento = table.Column<string>(type: "text", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),

@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using ReservasApi.Data;
 using ReservasApi.Models;
 using ReservasApi.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,7 +113,7 @@ using (var scope = app.Services.CreateScope())
             Email = email,
             Nombre = config["BarberoInicial:Nombre"]!,
             Apellido = config["BarberoInicial:Apellido"]!,
-            Documento = config["BarberoInicial:Documento"]!
+            PhoneNumber = config["BarberoInicial:Telefono"]!
         };
 
         await userManager.CreateAsync(barbero, config["BarberoInicial:Password"]!);

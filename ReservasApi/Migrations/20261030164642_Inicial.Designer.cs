@@ -12,8 +12,8 @@ using ReservasApi.Data;
 namespace ReservasApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261024163104_InicialConIdentity")]
-    partial class InicialConIdentity
+    [Migration("20261030164642_Inicial")]
+    partial class Inicial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -197,10 +197,6 @@ namespace ReservasApi.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Documento")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
